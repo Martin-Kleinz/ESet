@@ -1,105 +1,130 @@
 #include <iostream>
 #include <utility>
-#include <algorithm>
-#include <functional>
 
 template <class Key, class Compare = std::less<Key>>
 class RBTree
 {
-private:
-    enum class Color{RED, BLACK};
+public:
+    enum class Color
+    {
+        RED,
+        BLACK
+    };
     struct Node
     {
-        size_t size;
-        Key* key;
+        Key *key;
         Color color;
-        Node* left;
-        Node* right;
-        Node* parent;
-        Node(Key* k, const Color c, Node* p = nullptr, Node* l = nullptr, Node* r = nullptr) : key(k), color(c), parent(p), left(l), right(r), size(1) {}
-        ~Node(){
-            delete key;
-        }
+        Node *left;
+        Node *right;
+        Node *parent;
+        Node(Key *k, const Color c, Node *p = nullptr, Node *l = nullptr, Node *r = nullptr) : key(k), color(c), parent(p), left(l), right(r) {}
+        ~Node() {}
     };
     Node *root, *nil;
     size_t size_;
     Compare comp;
     void init_nil()
     {
-        nil = new Node(nullptr, Color::BLACK);
+        nil = new Node(nullptr, Color::RED);
         nil->left = nil->right = nil->parent = nil;
-        nil->size = 0;
     }
-    void update_size(Node*& x)
-    {
-        if(x != nil)
-            x->size = x->left->size + x->right->size + 1;
-    }
-    void Right_Rotate(Node*& x)
+    void Right_Rotate(Node *x)
     {
         Node *xl = x->left;
         x->left = xl->right;
-        if(xl->right != nil) xl->right->parent = x;
+        if (xl->right != nil)
+            xl->right->parent = x;
         xl->parent = x->parent;
-        if(xl->parent == nil) root = xl;
-        else if(xl == xl->parent->left) x->parent->left = xl;
-        else x->parent->right = xl;
+        if (root == x)
+            root = xl;
+        else if (x == x->parent->left)
+            x->parent->left = xl;
+        else
+            x->parent->right = xl;
         xl->right = x;
         x->parent = xl;
-        update_size(x);
-        update_size(xl);
-        x = xl;
     }
-    void Left_Rotate(Node* x)
+    void Left_Rotate(Node *x)
     {
-        Node* xr = x->right;
+        Node *xr = x->right;
         x->right = xr->left;
-        if(xr->left != nil) xr->left->parent = x;
+        if (xr->left != nil)
+            xr->left->parent = x;
         xr->parent = x->parent;
-        if(x->parent == nil) root = xr;
-        else if(x == x->parent->left) x->parent->left = xr;
-        else x->parent->right = xr;
+        if (root == x)
+            root = xr;
+        else if (x == x->parent->left)
+            x->parent->left = xr;
+        else
+            x->parent->right = xr;
         xr->left = x;
         x->parent = xr;
-        update_size(x);
-        update_size(xr);
-        x = xr;
     }
-    Node* Minimum(Node* x) const
+    Node *Minimum(Node *x) const
     {
-        while(x->left != nil) x = x->left;
+        while (x->left != nil)
+            x = x->left;
         return x;
     }
-    Node* Maximum(Node* x) const 
+    Node *Maximum(Node *x) const
     {
-        while(x->right != nil) x = x->right;
+        while (x->right != nil)
+            x = x->right;
         return x;
     }
-    void Transplant(Node* u, Node* v)
+    Node *Prev(Node *x) const
     {
-        if(u->parent == nil) root = v;
-        else if(u == u->parent->left) u->parent->left = v;
-        else u->parent->right = v;
+        if(x == nil) return Maximum(root);
+        if (x->left != nil)
+            return Maximum(x->left);
+        Node *y = x->parent;
+        while (y != nil && x == y->left)
+        {
+            x = y;
+            y = y->parent;
+        }
+        return y;
+    }
+    Node* Next(Node *x) const
+    {
+        if (x->right != nil)
+            return Minimum(x->right);
+        Node *y = x->parent;
+        while (y != nil && x == y->right)
+        {
+            x = y;
+            y = x->parent;
+        }
+        return y;
+    }
+    void Transplant(Node *u, Node *v)
+    {
+        if (u->parent == nil)
+            root = v;
+        else if (u == u->parent->left)
+            u->parent->left = v;
+        else
+            u->parent->right = v;
         v->parent = u->parent;
     }
-    void Insert_Fixup(Node* z)
+    void Insert_Fixup(Node *z)
     {
-        while(z->parent->color == Color::RED)
+        while (z->parent->color == Color::RED)
         {
-            Node* p = z->parent;
-            Node* pp = p->parent;
-            if(p == pp->left)
+            Node *p = z->parent;
+            Node *pp = p->parent;
+            if (p == pp->left)
             {
-                if(pp->right->color == Color::RED) // case 1
+                if (pp->right->color == Color::RED) // case 1
                 {
                     pp->color = Color::RED;
                     p->color = Color::BLACK;
                     pp->right->color = Color::BLACK;
                     z = pp;
                 }
-                else 
+                else
                 {
-                    if(z == p->right) // case 2
+                    if (z == p->right) // case 2
                     {
                         z = z->parent;
                         Left_Rotate(z);
@@ -110,9 +135,9 @@ private:
                     Right_Rotate(z->parent->parent);
                 }
             }
-            else 
+            else
             {
-                if(pp->left->color == Color::RED)
+                if (pp->left->color == Color::RED)
                 {
                     pp->color = Color::RED;
                     p->color = Color::BLACK;
@@ -121,11 +146,11 @@ private:
                 }
                 else
                 {
-                    if(z == p->left)
+                    if (z == p->left)
                     {
                         z = z->parent;
                         Right_Rotate(p);
-                    }    
+                    }
                     z->parent->color = Color::BLACK;
                     z->parent->parent->color = Color::RED;
                     Left_Rotate(z->parent->parent);
@@ -134,174 +159,401 @@ private:
         }
         root->color = Color::BLACK;
     }
-    void Delete_Fixup(Node* z)
+    void Remove_Fixup(Node *x)
     {
-
-    }
-    Node* Binary_Insert(const Key& key, Node *& x)
-    {
-        if(x == nullptr) 
+        while (x != root && x->color == Color::BLACK)
         {
-            x = new Node(key, Color::RED, x->parent);
-            return x;
-        }
-        else if(comp(key, x->key)) return Binary_Insert(key, x->left);
-        else if(comp(x->key, key)) return Binary_Insert(key, x->right);
-    }
-    void Adjust(Node* c)
-    {
-        while(c->parent && c->parent->color == Color::RED)
-        {
-            Node* p = c->parent;
-            Node* pp = p->parent;
-            if(p == pp->left)
+            if (x == x->parent->left)
             {
-                if(pp->right->color == Color::RED)
+                Node *bro = x->parent->right;
+                if (bro->color == Color::RED) // case 1
                 {
-                    //case 1
-                    pp->color = Color::RED;
-                    p->color = Color::BLACK;
-                    pp->right->color = Color::BLACK;
-                    c = pp;
+                    bro->color = Color::BLACK;
+                    x->parent->color = Color::RED;
+                    Left_Rotate(x->parent);
+                    bro = x->parent->right;
+                }
+                if (bro->left->color == Color::BLACK && bro->right->color == Color::BLACK) // case 2
+                {
+                    bro->color = Color::RED;
+                    x = x->parent;
                 }
                 else
                 {
-                    if(c == p->right)
+                    if (bro->left->color == Color::RED) // case 3
                     {
-                        //case 2
-                        Left_Rotate(p);
+                        bro->color = Color::RED;
+                        bro->left->color = Color::BLACK;
+                        Right_Rotate(bro);
+                        bro = x->parent->right;
                     }
-                    // case 3
-                    c->color = Color::BLACK;
-                    pp->color = Color::RED;
-                    Right_Rotate(pp);
+                    // case 4
+                    bro->color = bro->parent->color;
+                    bro->parent->color = Color::BLACK;
+                    bro->right->color = Color::BLACK;
+                    Left_Rotate(x->parent);
+                    x = root;
                 }
             }
             else
             {
-                if(pp->left->color == Color::RED)
+                Node *bro = x->parent->left;
+                if (bro->color == Color::RED)
                 {
-                    pp->color = Color::RED;
-                    p->color = Color::BLACK;
-                    pp->right->color = Color::BLACK;
-                    c = pp;
+                    bro->parent->color = Color::RED;
+                    bro->color = Color::BLACK;
+                    Right_Rotate(x->parent);
+                    bro = x->parent->left;
                 }
-                else 
+                if (bro->left->color == Color::BLACK && bro->right->color == Color::BLACK)
                 {
-                    if(c == p->left)
+                    bro->color = Color::RED;
+                    x = x->parent;
+                }
+                else
+                {
+                    if (bro->right->color == Color::RED)
                     {
-                        Right_Rotate(p);
+                        bro->color = Color::RED;
+                        bro->right->color = Color::BLACK;
+                        Left_Rotate(bro);
+                        bro = x->parent->left;
                     }
-                    c->color = Color::BLACK;
-                    pp->color = Color::RED;
-                    Left_Rotate(pp);
+                    bro->color = x->parent->color;
+                    x->parent->color = Color::BLACK;
+                    bro->left->color = Color::BLACK;
+                    Right_Rotate(x->parent);
+                    x = root;
                 }
             }
         }
-        root->color = Color::BLACK;
+        x->color = Color::BLACK;
     }
-    void Clear(Node* x)
+    void Clear(Node *x)
     {
-        if(x != nil){
-            Clear(x->left);
-            Clear(x->right);
-            delete x;
-        }
+        if(x == nil) return;
+        if(x->left != nil) Clear(x->left);
+        if(x->right != nil) Clear(x->right);
+        delete x->key;
+        delete x;
+        x = nullptr;
     }
-public:
-    RBTree() : size_(0), comp(Compare()){
+    Node* Copy(Node *x, Node *parent, Node *nl)
+    {
+        if (x == nl)
+            return nil;
+        Node *newnode = new Node(new Key(*x->key), x->color, parent, nil, nil);
+        newnode->left = Copy(x->left, newnode, nl);
+        newnode->right = Copy(x->right, newnode, nl);
+        return newnode;
+    }
+
+    RBTree() : size_(0), comp(Compare())
+    {
         init_nil();
         root = nil;
     }
-    ~RBTree(){
-        Clear(root);
-        delete nil;
+
+    RBTree(const RBTree &other) : size_(other.size_), comp(other.comp)
+    {
+        init_nil();
+        root = Copy(other.root, nil, other.nil);
+    } 
+
+    RBTree(RBTree &&other) : root(other.root), nil(other.nil), size_(other.size_), comp(std::move(other.comp))
+    {
+        other.root = other.nil = nullptr;
+        other.size_ = 0;
     }
-    std::pair<Node*, bool> Insert(const Key& key)
+
+    RBTree& operator=(const RBTree& other)
+    {
+        if(this != &other){
+            Clear(root);
+            delete nil;
+            size_ = other.size_;
+            comp = other.comp;
+            init_nil();
+            root = Copy(other.root, nil, other.nil);
+        }
+        return *this;
+    }
+
+    RBTree& operator=(RBTree&& other)
+    {
+        if(this != &other){
+            Clear(root);
+            delete nil;
+            root = other.root;
+            nil = other.nil;
+            size_ = other.size_;
+            comp = std::move(other.comp);
+            other.root = other.nil = nullptr;
+            other.size_ = 0;
+        }
+        return *this;
+    }
+
+    ~RBTree()
+    {
+        Clear(root);
+        if(nil != nullptr) delete nil, nil = nullptr;
+    }
+    std::pair<Node *, bool> Insert(const Key &key)
     {
         Node *y = nil, *x = root;
-        while(x != nil)
+        while (x != nil)
         {
             y = x;
-            y->size++;
-            if(comp(key, *(x->key))) x = x->left;
-            else if(comp(*(x->key), key)) x = x->right;
+            if (comp(key, *(x->key)))
+                x = x->left;
+            else if (comp(*(x->key), key))
+                x = x->right;
+            else
+                return {x, false};
+        }
+        x = new Node(new Key(key), Color::RED, y, nil, nil);
+        if (y == nil)
+        {
+            root = x;
+            root->parent = y;
+        }
+        else 
+        {
+            if (comp(key, *(y->key)))
+                y->left = x;
+            else
+                y->right = x;
+        }
+        size_++;
+        Insert_Fixup(x);
+        return {x, true};
+    }
+    bool Remove(const Key &key)
+    {
+        Node *z = root;
+        while (z != nil)
+        {
+            if (comp(key, *(z->key)))
+                z = z->left;
+            else if (comp(*(z->key), key))
+                z = z->right;
+            else
+                break;
+        }
+        if (z == nil)
+            return false;
+        Node *y = z;
+        Color ycolor = y->color;
+        Node *x = nil;
+        if (z->left == nil)
+        {
+            x = z->right;
+            Transplant(z, z->right);
+        }
+        else if (z->right == nil)
+        {
+            x = z->left;
+            Transplant(z, z->left);
+        }
+        else
+        {
+            y = Minimum(z->right);
+            ycolor = y->color;
+            x = y->right;
+            if (y->parent == z)
+                x->parent = y;
             else
             {
-                while(x != y)
-                {
-                    x->size--;
-                    x= x->parent;
-                }
-                y->size--;
-                return {x, false};
+                Transplant(y, y->right);
+                y->right = z->right;
+                y->right->parent = y;
             }
-            Node *z = new Node(key, Color::RED, y, nil, nil);
-            if(y == nil) root = z;
-            else if(comp(key, *(y->key))) y->left = z;
-            else y->right = z;
-            size_++;
-            Insert_Fixup(z);
-            return {z, true};
+            Transplant(z, y);
+            y->left = z->left;
+            z->left->parent = y;
+            y->color = z->color;
         }
-    }
-    void Erase(const Key& key)
-    {
-        Node* c = root;
-        while (c)
+        delete z->key;
+        delete z;
+        size_--;
+        if (ycolor == Color::BLACK)
         {
-            if(comp(key, c->key)) c = c->left;
-            else if(comp(c->key, key)) c = c->right;
-            else break;
+            Remove_Fixup(x);
         }
-        
+        return true;
+    }
+    size_t Size() const
+    {
+        return size_;
+    }
+    Node *Find(const Key &key) const
+    {
+        Node *x = root;
+        while (x != nil)
+        {
+            if (comp(key, *(x->key)))
+                x = x->left;
+            else if (comp(*(x->key), key))
+                x = x->right;
+            else
+                return x;
+        }
+        return nil;
     }
 };
-
 
 template <class Key, class Compare = std::less<Key>>
 class ESet
 {
+private:
+    RBTree<Key, Compare> tree;
 public:
     class iterator
     {
     private:
-        Node* current;
-        const ESet* set;
+        typename RBTree<Key, Compare>::Node *current;
+        const RBTree<Key, Compare> *tree;
+
     public:
-        iterator();
-        ~iterator();
+        iterator(typename RBTree<Key, Compare>::Node *node = nullptr, const RBTree<Key, Compare> *t = nullptr) : current(node), tree(t) {}
+        ~iterator() {}
+        
+        const Key &operator*() const
+        {
+            if(current == tree->nil) throw "invalid iterator";
+            return *(current->key);
+        }
+        iterator &operator++()
+        {
+            if(current != tree->nil)
+                current = tree->Next(current);
+            return *this;
+        }
+        iterator operator++(int)
+        {
+            iterator temp = *this;
+            ++(*this);
+            return temp;
+        }
+        iterator &operator--()
+        {
+            if(current == tree->Minimum(tree->root)) return *this;
+            current = tree->Prev(current);
+            return *this;
+        }
+        iterator operator--(int)
+        {
+            if(current == tree->Minimum(tree->root)) return *this;
+            iterator temp = *this;
+            --(*this);
+            return temp;
+        }
+        bool operator==(const iterator &other) const
+        {
+            return current == other.current;
+        }
+        bool operator!=(const iterator &other) const
+        {
+            return current != other.current;
+        }
     };
 
-    ESet();
+    ESet() = default;
 
-    ~ESet();
+    ~ESet() = default;
+
+    std::pair<iterator, bool> insert(const Key &key)
+    {
+        auto result = tree.Insert(key);
+        return {iterator(result.first, &tree), result.second};
+    }
 
     template <class... Args>
-    std::pair<iterator, bool> emplace(Args &&...args);
+    std::pair<iterator, bool> emplace(Args &&...args)
+    {
+        return insert(Key(std::forward<Args>(args)...));
+    }
 
-    size_t erase(const Key *key);
+    size_t erase(const Key &key)
+    {
+        return tree.Remove(key) ? 1 : 0;
+    }
 
-    iterator find(const Key &key) const;
+    iterator find(const Key &key) const
+    {
+        return iterator(tree.Find(key), &tree);
+    }
 
-    ESet(const ESet &other);
+    ESet(const ESet &other) : tree(other.tree) {}
 
-    ESet &operator=(const ESet &other);
+    ESet &operator=(const ESet &other){
+        if(this != &other)
+            tree = other.tree;
+        return *this;
+    }
 
-    ESet(ESet &&other);
+    ESet(ESet &&other) noexcept : tree(std::move(other.tree)) {}
 
-    ESet &operator=(ESet &&other) noexcept;
+    ESet &operator=(ESet &&other) noexcept{
+        if(this != &other) tree = std::move(other.tree);
+        return *this;
+    }
 
-    size_t range(const Key &l, const Key &r) const;
+    iterator lower_bound(const Key &key) const{
+        typename RBTree<Key, Compare>::Node* x = tree.root;
+        typename RBTree<Key, Compare>::Node* result = tree.nil;
+        while(x != tree.nil)
+        {
+            if(!tree.comp(*(x->key), key)){
+                result = x;
+                x = x->left;
+            }
+            else x = x->right;
+        }
+        return iterator(result, &tree);
+    }
 
-    size_t size() const noexcept;
+    iterator upper_bound(const Key &key) const{
+        typename RBTree<Key, Compare>::Node* x = tree.root;
+        typename RBTree<Key, Compare>::Node* result = tree.nil;
+        while(x != tree.nil)
+        {
+            if(tree.comp(key, *(x->key))){
+                result = x;
+                x = x->left;
+            }
+            else x = x->right;
+        }
+        return iterator(result, &tree);
+    }
 
-    iterator lower_bound(const Key &key) const;
 
-    iterator upper_bound(const Key &key) const;
+    size_t range(const Key &l, const Key &r) const{
+        if(tree.comp(r, l)) return 0;
+        iterator lower = lower_bound(l), upper = upper_bound(r);
+        size_t cnt = 0;
+        while(lower != upper)
+        {
+            ++cnt;
+            ++lower;
+        }
+        return cnt;
+    }
 
-    iterator begin() const noexcept;
+    size_t size() const noexcept
+    {
+        return tree.size_;
+    }
+    
+    iterator begin() const noexcept
+    {
+        return iterator(tree.Minimum(tree.root), &tree);
+    }
 
-    iterator end() const noexcept;
-
+    iterator end() const noexcept
+    {
+        return iterator(tree.nil, &tree);
+    }
+    
 };
